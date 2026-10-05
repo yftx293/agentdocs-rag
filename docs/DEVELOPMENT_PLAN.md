@@ -29,6 +29,8 @@
 
 **S6 重验**（section 级 golden）：heading-only 仍胜出（hit@5=0.607 第一），冻结结论不变。新发现：section 级下 BM25 衰减（0.357）、RRF < 纯向量（0.607 < 0.679）→ V1 需调融合权重或加 Reranker。
 
+**红线例外**：`scripts/annotate_sections.py` 是封板 migration 的一次性例外（写回 `retrieval_eval.jsonl`），已执行完毕、标记为「勿再运行」，后续 eval 改动应手工编辑 golden 文件。
+
 ---
 
 ## 1. 项目概览（一句话）
@@ -86,7 +88,7 @@
 | Reranker | V0 不做 | V1 用 bge-reranker-v2-m3 |
 | Query Analysis | V0 规则版（项目名词典 + intent 关键词） | V1 再上 LLM |
 | chunk_id | `sha1(parent_id + text)`，不用顺序号 | 保证增量/复跑稳定 |
-| Token 计数 | 与 Embedding 模型 tokenizer 对齐（XLM-R） | 避免 chunk 大小与向量输入错位 |
+| Token 计数 | V0 用 ~4 字符/token 估算；V1 改用真实 XLM-R tokenizer | 避免 chunk 大小与向量输入错位 |
 | Trace | 每 query 一个 JSONL，`trace_id` 贯穿 | PRD §23 |
 
 ---
@@ -249,7 +251,7 @@ agentdocs-rag/
 - **完成什么**：四步 CLI（ingest/build_index/ask/evaluate）；trace 记录全链路耗时/token；PRD §27 验收清单逐条打勾；挑 10–20 失败题归因到 数据/检索/生成。
 - **产生改动**：新增 `app/observability/tracer.py` `scripts/ask.py` `README.md` + trace 输出
 - **怎么验收**：任一次 query 可打印 `Question → Candidates → final_context → Answer + 耗时`；PRD §27 全部满足。
-- **完成证据** ✅（2026-10 实测）：`tracer.py` 实现，`ask.py --chain` 打印全链路（vector/bm25/rrf 候选 → final_context → 耗时），8 条 trace 写入 `traces/traces.jsonl`（含各阶段耗时+token）；`failure_analysis.py` 归因：28 题 4 题检索未命中（0 数据缺失，详见 `docs/failure-analysis.md`）；V0 验收清单逐条打勾（`docs/acceptance.md`）；README 补 CLI 用法。
+- **完成证据** ✅（2026-10 实测）：`tracer.py` 实现，`ask.py --chain` 打印全链路（vector/bm25/rrf 候选 → final_context → 耗时），8 条 trace 写入 `traces/traces.jsonl`（含各阶段耗时+token）；`failure_analysis.py` 归因：28 题 9 题检索未命中（0 数据缺失，详见 `docs/failure-analysis.md`）；V0 验收清单逐条打勾（`docs/acceptance.md`）；README 补 CLI 用法。
 - **影响与风险**：失败归因结论决定 V1 优先级（是补数据、换检索、还是调生成），是本阶段核心产出。
 
 ---
@@ -267,7 +269,7 @@ agentdocs-rag/
 | S6 Chunk Benchmark | ✅ 完成 | C(heading-only) 胜出：mrr@5=0.631（文件级，封板后 section 级重验仍胜出） | 2026-10 | 已冻结进 config |
 | S7 Context Builder | ✅ 完成 | 7:7 平衡（compaction）；retrieve_balanced 上限 | 2026-10 | Parent Expansion 已退化 |
 | S8 生成+引用 | ✅ 完成 | 8 题 4 intent 全通；55 引用可回溯 | 2026-10 | DeepSeek 真实调用 |
-| S9 Trace+CLI+验收 | ✅ 完成 | 8 trace；4 题检索未命中归因；验收全过 | 2026-10 | V0 完成 |
+| S9 Trace+CLI+验收 | ✅ 完成 | 8 trace；9 题检索未命中归因；验收全过 | 2026-10 | V0 完成 |
 
 图例：⬜ 待开始 / 🔵 进行中 / ✅ 完成 / ⛔ 阻塞
 

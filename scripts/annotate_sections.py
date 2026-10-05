@@ -1,6 +1,11 @@
-"""一次性标注：给 eval 集补 section 级 golden（expected_sections）。
+"""一次性 migration 脚本：给 eval 集补 section 级 golden（expected_sections）。
 
-用法：
+⚠️ 红线例外：data/eval 是手写 golden 资产，常规 pipeline 脚本只读、禁止写回。
+本脚本是「封板 migration」的一次性例外——在 V0 封板时手工执行一次，把 section 级
+golden 写回 retrieval_eval.jsonl。已执行完毕，请勿再运行；后续改动应手工编辑
+retrieval_eval.jsonl，不要复用本脚本写回。
+
+用法（仅封板 migration 时执行一次，勿重复）：
     .venv/Scripts/python.exe scripts/annotate_sections.py
 """
 
