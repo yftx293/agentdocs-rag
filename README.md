@@ -30,7 +30,7 @@
 ```
 
 ## 检索基线
-RRF 融合 hit@5=0.821 / mrr@5=0.631（28 题，BGE-M3@GPU，heading-only 分块）。
+RRF 融合 hit@5=0.607 / mrr@5=0.320（28 题，section 级 golden，BGE-M3@GPU，heading-only 分块）。
 
 ## 状态
 V0 完成（S0–S9）。

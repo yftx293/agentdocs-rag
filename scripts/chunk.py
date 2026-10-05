@@ -1,7 +1,7 @@
 """S3 Markdown-aware 分块入口。
 
 用法：
-    uv run python scripts/chunk.py
+    .venv/Scripts/python.exe scripts/chunk.py
 """
 
 from app.core.logging import setup_logging

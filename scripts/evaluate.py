@@ -1,7 +1,7 @@
 """S5 检索评测：在 S4 评测集上跑 vector/bm25/rrf，输出真实 Hit@K / Recall@K / MRR。
 
 用法：
-    uv run python scripts/evaluate.py
+    .venv/Scripts/python.exe scripts/evaluate.py
 """
 
 from pathlib import Path
@@ -19,12 +19,22 @@ from app.retrieval.fusion import rrf_fuse
 from app.retrieval.vector import VectorRetriever
 
 
-def _source_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
+def _file_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
     out = []
     for cid in chunk_ids:
         c = chunk_map.get(cid)
         if c:
             out.append(f"{c.metadata.project}:{c.metadata.source_path}")
+    return out
+
+
+def _section_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
+    out = []
+    for cid in chunk_ids:
+        c = chunk_map.get(cid)
+        if c:
+            heading = " > ".join(c.metadata.heading_path) if c.metadata.heading_path else ""
+            out.append(f"{c.metadata.project}:{c.metadata.source_path} :: {heading}")
     return out
 
 
@@ -53,10 +63,12 @@ def main() -> None:
         rhits = [cid for cid, _ in rrf_fuse(vr.retrieve(s.question), br.retrieve(s.question),
                                              k=settings.indexing.fusion.rrf_k,
                                              top_k=settings.indexing.fusion.final_top_k)]
-        vec_ranked.append(_source_keys(vhits, chunk_map))
-        bm25_ranked.append(_source_keys(bhits, chunk_map))
-        rrf_ranked.append(_source_keys(rhits, chunk_map))
-        expected.append(s.expected_source_set())
+        use_sections = bool(s.expected_sections)
+        keyfn = _section_keys if use_sections else _file_keys
+        vec_ranked.append(keyfn(vhits, chunk_map))
+        bm25_ranked.append(keyfn(bhits, chunk_map))
+        rrf_ranked.append(keyfn(rhits, chunk_map))
+        expected.append(set(s.expected_sections) if use_sections else s.expected_source_set())
 
     ks = settings.evaluation.k_values
     print("\n========== 检索评测结果（真实数字） ==========")

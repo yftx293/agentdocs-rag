@@ -1,7 +1,7 @@
 """S3 分块抽查工具：完整性检查 + 确定性抽样。
 
 用法：
-    uv run python scripts/spotcheck.py [--n 30] [--seed 42] [--out docs/chunk-spotcheck-sample.md]
+    .venv/Scripts/python.exe scripts/spotcheck.py [--n 30] [--seed 42] [--out docs/chunk-spotcheck-sample.md]
 """
 
 from __future__ import annotations

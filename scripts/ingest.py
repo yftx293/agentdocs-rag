@@ -1,7 +1,7 @@
 """S1 语料采集入口。
 
 用法：
-    uv run python scripts/ingest.py
+    .venv/Scripts/python.exe scripts/ingest.py
 """
 
 from app.core.logging import setup_logging

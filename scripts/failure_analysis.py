@@ -39,18 +39,24 @@ def main() -> None:
     failures: list[dict] = []
     for s in samples:
         hits = retrieve_balanced(s.question, s.target_projects, vr, br, chunk_map, rrf_k=settings.indexing.fusion.rrf_k)
+        use_sections = bool(s.expected_sections)
         retrieved = set()
         for cid in hits:
             c = chunk_map.get(cid)
             if c:
-                retrieved.add(f"{c.metadata.project}:{c.metadata.source_path}")
-        golden = s.expected_source_set()
+                if use_sections:
+                    heading = " > ".join(c.metadata.heading_path) if c.metadata.heading_path else ""
+                    retrieved.add(f"{c.metadata.project}:{c.metadata.source_path} :: {heading}")
+                else:
+                    retrieved.add(f"{c.metadata.project}:{c.metadata.source_path}")
+        golden = set(s.expected_sections) if use_sections else s.expected_source_set()
         if retrieved & golden:
             continue  # 命中
 
         data_gap, chunking_gap, retrieval_miss = [], [], []
         for g in golden:
-            proj, _, rel = g.partition(":")
+            proj_path = g.partition(" :: ")[0] if use_sections else g
+            proj, _, rel = proj_path.partition(":")
             if not (raw / proj / rel).exists():
                 data_gap.append(g)
             elif not any(c.metadata.project == proj and c.metadata.source_path == rel for c in chunks):

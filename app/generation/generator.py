@@ -64,13 +64,13 @@ def _extract_cited(answer: str) -> list[int]:
     return out
 
 
-def render_sources(citations: list[Citation]) -> str:
-    if not citations:
+def render_sources(indexed: list[tuple[int, Citation]]) -> str:
+    if not indexed:
         return ""
     lines = ["\nSources:"]
-    for i, c in enumerate(citations, 1):
+    for idx, c in indexed:
         loc = f"  Lines {c.start_line}-{c.end_line}" if c.start_line else ""
-        lines.append(f"[{i}] {c.project} / {c.source_path}")
+        lines.append(f"[{idx}] {c.project} / {c.source_path}")
         if c.section:
             lines.append(f"    {c.section}")
         lines.append(f"    {c.source_url}{loc}")
@@ -93,11 +93,11 @@ def generate(
     user = build_user_prompt(question, intent, numbered)
     answer, usage = _call_deepseek(COMMON_SYSTEM, user, api_key, model, temperature)
 
-    used = _extract_cited(answer)
-    citations = [
-        Citation(**context.citations[i - 1])
-        for i in used
-        if 1 <= i <= len(context.citations)
-    ]
-    sources = render_sources(citations)
+    used = sorted(_extract_cited(answer))
+    indexed: list[tuple[int, Citation]] = []
+    for i in used:
+        if 1 <= i <= len(context.citations):
+            indexed.append((i, Citation(**context.citations[i - 1])))
+    sources = render_sources(indexed)
+    citations = [c for _, c in indexed]
     return GenerationResult(answer=answer, citations=citations, sources_text=sources, usage=usage)

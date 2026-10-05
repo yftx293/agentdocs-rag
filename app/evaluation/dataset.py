@@ -19,9 +19,16 @@ class EvalSample(BaseModel):
     target_projects: list[str] = Field(default_factory=list)
     target_topics: list[str] = Field(default_factory=list)
     expected_sources: list[str] = Field(default_factory=list)
+    expected_sections: list[str] = Field(default_factory=list, description="可选：section 级 golden（project:path :: heading）")
 
     def expected_source_set(self) -> set[str]:
         return set(self.expected_sources)
+
+
+def section_key(project: str, source_path: str, heading_path: list[str]) -> str:
+    """section 级 golden 的匹配 key。"""
+    heading = " > ".join(heading_path) if heading_path else ""
+    return f"{project}:{source_path} :: {heading}"
 
 
 def load_dataset(path: Path) -> list[EvalSample]:

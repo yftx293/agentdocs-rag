@@ -1,7 +1,7 @@
 """S5 索引构建入口：embedding + FAISS + BM25。
 
 用法：
-    uv run python scripts/build_index.py
+    .venv/Scripts/python.exe scripts/build_index.py
 """
 
 from pathlib import Path

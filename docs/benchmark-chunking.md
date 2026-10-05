@@ -2,40 +2,45 @@
 
 评测集：28 题（4 类 intent）
 
-## 三策略对比（RRF）
+> 本节为 **section 级 golden** 的结果（封板修复 #2 后重跑）。文件级历史结果见文末。
+
+## 三策略对比（RRF，section 级 golden）
 
 | 策略 | chunks | hit@3 | hit@5 | mrr@5 |
 |---|---|---|---|---|
-| A: 300 tokens / 30 overlap | 3363 | 0.750 | 0.786 | 0.614 |
-| B: 500 tokens / 50 overlap | 2753 | 0.750 | 0.821 | 0.588 |
-| C: heading-only（不二次切分） | 2391 | 0.821 | 0.821 | 0.631 |
+| A: 300 tokens / 30 overlap | 3363 | 0.429 | 0.571 | 0.336 |
+| B: 500 tokens / 50 overlap | 2753 | 0.429 | 0.571 | 0.314 |
+| C: heading-only（不二次切分） | 2391 | 0.464 | 0.607 | 0.320 |
 
-## A: 300 tokens / 30 overlap 分阶段指标
-- vector: hit@5=0.786 mrr@5=0.620
-- bm25: hit@5=0.714 mrr@5=0.535
-- rrf: hit@5=0.786 mrr@5=0.614
+## 分阶段指标（section 级）
 
-## B: 500 tokens / 50 overlap 分阶段指标
-- vector: hit@5=0.786 mrr@5=0.599
-- bm25: hit@5=0.714 mrr@5=0.538
-- rrf: hit@5=0.821 mrr@5=0.588
+### A: 300 tokens / 30 overlap
+- vector: hit@5=0.679 mrr@5=0.442
+- bm25: hit@5=0.321 mrr@5=0.224
+- rrf: hit@5=0.571 mrr@5=0.336
 
-## C: heading-only（不二次切分） 分阶段指标
-- vector: hit@5=0.786 mrr@5=0.612
-- bm25: hit@5=0.714 mrr@5=0.517
-- rrf: hit@5=0.821 mrr@5=0.631
+### B: 500 tokens / 50 overlap
+- vector: hit@5=0.714 mrr@5=0.426
+- bm25: hit@5=0.357 mrr@5=0.245
+- rrf: hit@5=0.571 mrr@5=0.314
 
-## 结论与决策
+### C: heading-only（不二次切分）
+- vector: hit@5=0.679 mrr@5=0.429
+- bm25: hit@5=0.357 mrr@5=0.217
+- rrf: hit@5=0.607 mrr@5=0.320
 
-**选定策略 C（heading-only）**，理由：
+## 结论（section 级重验）
 
-1. hit@3 最高（0.821，vs A/B 的 0.750）
-2. mrr@5 最高（0.631，vs A 0.614 / B 0.588）——命中 chunk 排名更靠前
-3. hit@5 并列最高（0.821）
-4. chunks 最少（2391 vs A 3363 / B 2753）——更少存储与检索开销
+**heading-only（C）仍胜出**：hit@3（0.464）与 hit@5（0.607）均第一；A(300/30) 仅在 mrr@5 微弱领先（0.336 vs 0.320，差异 0.016，可视为噪声）。冻结决策不变。
 
-**反直觉但合理的解释**：这批技术文档的 heading 边界天然语义自洽，硬切成 300/500 token 会把概念切碎、稀释上下文；保留整段 section 反而让检索命中更完整、排名更靠前。
+**关键发现**：section 级下 BM25 大幅衰减（各策略 bm25 hit@5 仅 0.32~0.36），且 RRF（0.607）< 纯向量（0.679）——BM25 关键词匹配「文件准、section 不准」，section 级下融合反成负增益。→ V1 需调融合权重（降低 BM25）或引入 Reranker。
 
-**注意**：heading-only 下超长 section 会被 embedding 截断到 max_seq_length(8192)，这是已知限制（当前语料中占比极低，未影响整体结果）。
+## 历史（文件级 golden，封板前）
 
-**已冻结**：`config/default.yaml` 的 `chunking.strategy=heading_only`、`heading_only=true`；生产数据已按此重跑（2391 chunks，RRF hit@5=0.821 / mrr@5=0.631）。
+| 策略 | chunks | hit@3 | hit@5 | mrr@5 |
+|---|---|---|---|---|
+| A: 300/30 | 3363 | 0.750 | 0.786 | 0.614 |
+| B: 500/50 | 2753 | 0.750 | 0.821 | 0.588 |
+| C: heading-only | 2391 | 0.821 | 0.821 | 0.631 |
+
+> 文件级结论（C 胜出）与 section 级结论一致，但文件级数字系统性偏高（高估检索精度）。

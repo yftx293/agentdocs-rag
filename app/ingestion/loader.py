@@ -31,15 +31,15 @@ log = get_logger(__name__)
 _USER_AGENT = "agentdocs-rag/0.1"
 
 
-def _git_ls_remote(repo: str, proxy: str | None) -> str:
-    """获取默认分支 HEAD 的 commit SHA。"""
+def _git_ls_remote(repo: str, proxy: str | None, branch: str = "main") -> str:
+    """获取指定分支 HEAD 的 commit SHA（分支配置真正生效）。"""
     cmd = ["git"]
     if proxy:
         cmd += ["-c", f"http.proxy={proxy}", "-c", f"https.proxy={proxy}"]
-    cmd += ["ls-remote", repo, "HEAD"]
+    cmd += ["ls-remote", repo, f"refs/heads/{branch}"]
     out = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=60)
     if not out.stdout.strip():
-        raise RuntimeError(f"git ls-remote 无输出: {repo}")
+        raise RuntimeError(f"git ls-remote 无输出: {repo} (branch={branch})")
     return out.stdout.split()[0]
 
 
@@ -140,7 +140,7 @@ def ingest() -> dict:
     for name, proj in settings.corpus.projects.items():
         log.info("== 项目 %s (%s) ==", name, proj.repo)
         try:
-            sha = _git_ls_remote(proj.repo, proxy)
+            sha = _git_ls_remote(proj.repo, proxy, proj.branch)
             old = (old_manifest.get("projects") or {}).get(name) or {}
             if old.get("commit_sha") == sha and old.get("files"):
                 log.info("  commit 未变(%s)，跳过", sha[:8])

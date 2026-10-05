@@ -21,9 +21,9 @@
 ## Retrieval
 | 验收项 | 状态 | 证据 |
 |---|---|---|
-| Vector Search 可用 | ✅ | BGE-M3@GPU，vector-only hit@5=0.786 |
-| BM25 可用 | ✅ | bm25s+jieba，bm25-only hit@5=0.714 |
-| RRF 可用 | ✅ | RRF 融合 hit@5=0.821 超单路 |
+| Vector Search 可用 | ✅ | BGE-M3@GPU，vector-only hit@5=0.679（section 级） |
+| BM25 可用 | ✅ | bm25s+jieba，bm25-only hit@5=0.357（section 级） |
+| RRF 可用 | ✅ | RRF 融合 hit@5=0.607（section 级） |
 | 能打印各阶段候选结果 | ✅ | `scripts/ask.py --chain` 打印 vector/bm25/rrf top-K |
 
 ## Generation
@@ -46,5 +46,5 @@
 | 一次 Query 能看到 Question→Candidates→Context→Answer 并记录耗时 | ✅ | `traces/traces.jsonl`（8 条 trace，含各阶段耗时/token）；`ask.py --chain` 打印全链路 |
 
 ## 总体结论
-**V0 全部验收项通过。** 检索基线 RRF hit@5=0.821 / mrr@5=0.631（BGE-M3@GPU，heading-only 分块）。
-失败归因（`docs/failure-analysis.md`）：28 题中 4 题检索未命中（0 数据缺失），指向 V1 检索优化（Reranker/Query Analysis/Metadata Filter）。
+**V0 全部验收项通过。** 检索基线 RRF hit@5=0.607 / mrr@5=0.320（section 级 golden，BGE-M3@GPU，heading-only 分块）。
+失败归因（`docs/failure-analysis.md`）：28 题中 9 题检索未命中（0 数据缺失），指向 V1 检索优化（Reranker/Query Analysis/Metadata Filter）。

@@ -17,7 +17,7 @@
 | 8 | RRF 参数 | k=60 | S6 调 |
 | 9 | 是否 Cross-Encoder Reranker | V0 不做；V1 用 bge-reranker-v2-m3 | V1 |
 | 10 | Context Builder 最大 Token Budget | 4000 tokens | S7 实测 |
-| 11 | Compare Query 多项目平衡 | per-project Top-N 再统一重排 | S7 实现 |
+| 11 | Compare Query 多项目平衡 | 全局召回 → 按项目分桶（每项目上限）→ round-robin 交错；真 per-project 检索留 V1 metadata filter | S7 实现 |
 | 12 | Query Analysis 规则还是 LLM | V0 规则版，V1 LLM | 已定 |
 | 13 | Topic Metadata 规则还是模型 | V0 规则（标题路径启发式），V1 模型 | 已定 |
 | 14 | Golden Sources 如何构建 | 人工从 chunk 清单挑真实文件/章节 | S4 实现 |
@@ -31,7 +31,7 @@
 | 生成隐私 | 调用 DeepSeek 会外发 context 片段 → **S8 前必须再次向用户确认** |
 | BM25 实现 | `jieba` 分词 + `bm25s`（非纯 Python rank_bm25） |
 | chunk_id | `sha1(parent_id + text)`，不用顺序号 |
-| Token 计数 | 与 embedding tokenizer（XLM-R）对齐 |
+| Token 计数 | V0 用 ~4 字符/token 估算（splitter.py），真实 XLM-R 计数留 V1 |
 | Query Analysis | V0 规则：项目名词典 + intent 关键词 |
 | Trace | 每 query 一个 JSONL，`trace_id` 贯穿 |
 | 网络代理 | `http://127.0.0.1:7897`（用户提供，S1 采集用；`AGENTDOCS_PROXY` 可覆盖） |
@@ -49,5 +49,5 @@
 | BM25 | bm25s + jieba | 中文分词 |
 | 融合 | RRF k=60 | 简单稳定 |
 | 生成 | DeepSeek chat | 唯一已有 key |
-| 配置 | pydantic-settings + YAML | 单一参数入口 config/default.yaml |
+| 配置 | pydantic BaseModel + YAML + os.environ（未用 pydantic-settings） | 单一参数入口 config/default.yaml |
 | 校验 | pydantic v2 | schemas.py 单一事实源 |

@@ -26,12 +26,22 @@ STRATEGIES = [
 ]
 
 
-def _source_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
+def _file_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
     out = []
     for cid in chunk_ids:
         c = chunk_map.get(cid)
         if c:
             out.append(f"{c.metadata.project}:{c.metadata.source_path}")
+    return out
+
+
+def _section_keys(chunk_ids: list[str], chunk_map: dict[str, Chunk]) -> list[str]:
+    out = []
+    for cid in chunk_ids:
+        c = chunk_map.get(cid)
+        if c:
+            heading = " > ".join(c.metadata.heading_path) if c.metadata.heading_path else ""
+            out.append(f"{c.metadata.project}:{c.metadata.source_path} :: {heading}")
     return out
 
 
@@ -70,10 +80,12 @@ def main() -> None:
             vh = vr.retrieve(s.question)
             bh = br.retrieve(s.question)
             rh = rrf_fuse(vh, bh, k=settings.indexing.fusion.rrf_k, top_k=settings.indexing.fusion.final_top_k)
-            vec_ranked.append(_source_keys([x for x, _ in vh], chunk_map))
-            bm25_ranked.append(_source_keys([x for x, _ in bh], chunk_map))
-            rrf_ranked.append(_source_keys([x for x, _ in rh], chunk_map))
-            expected.append(s.expected_source_set())
+            use_sections = bool(s.expected_sections)
+            keyfn = _section_keys if use_sections else _file_keys
+            vec_ranked.append(keyfn([x for x, _ in vh], chunk_map))
+            bm25_ranked.append(keyfn([x for x, _ in bh], chunk_map))
+            rrf_ranked.append(keyfn([x for x, _ in rh], chunk_map))
+            expected.append(set(s.expected_sections) if use_sections else s.expected_source_set())
 
         ks = settings.evaluation.k_values
         r = {

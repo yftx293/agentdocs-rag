@@ -1,7 +1,7 @@
 """S2 标准化 + 元数据 + 去重入口。
 
 用法：
-    uv run python scripts/normalize.py
+    .venv/Scripts/python.exe scripts/normalize.py
 """
 
 from app.core.logging import setup_logging

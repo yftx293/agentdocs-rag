@@ -11,6 +11,26 @@
 
 ---
 
+## 0. V0 封板修复记录（用户审查，2026-10）
+
+用户审查发现 7 个问题，已全部修复：
+
+| # | 问题 | 修复 |
+|---|---|---|
+| 1 | Token 计数与冻结决策不一致（文档写 XLM-R，实际 ~4 字符/token） | 改文档：V0 用估算，真实 tokenizer 留 V1 |
+| 2 | golden 粒度不够（文件级，非 section 级） | 补 `expected_sections` 到 28 题，指标改 section 级 |
+| 3 | S7 文档「per-project 检索」与实现「全局召回→分桶」不符 | 改文档与代码一致 |
+| 4 | Citation 编号 bug（Sources 从 [1] 重编号，正文对不上） | `render_sources` 保留原始 context index |
+| 5 | 脚本头命令 `uv run` 与 README 冲突 | 统一 `.venv/Scripts/python.exe` |
+| 6 | 配置文档写 pydantic-settings，实际未用 | 改文档 + 移除依赖 |
+| 7 | Loader 的 branch 配置未生效（用 HEAD） | 改 `ls-remote refs/heads/<branch>` |
+
+**关键影响（#2）**：评测基线从「文件级 hit@5=0.821」修正为「section 级 hit@5=0.607 / mrr@5=0.320」。
+
+**S6 重验**（section 级 golden）：heading-only 仍胜出（hit@5=0.607 第一），冻结结论不变。新发现：section 级下 BM25 衰减（0.357）、RRF < 纯向量（0.607 < 0.679）→ V1 需调融合权重或加 Reranker。
+
+---
+
 ## 1. 项目概览（一句话）
 
 构建面向 AI Agent / Coding Agent 技术资料的 RAG 系统，覆盖：精准检索、技术解释、跨项目对比、架构分析、来源追溯、可量化评测。
@@ -213,7 +233,7 @@ agentdocs-rag/
 - **完成什么**：去重、Parent Expansion、同父合并、Token Budget、来源平衡、项目平衡、代码块保护、Citation 保留。
 - **产生改动**：新增 `app/context/builder.py`
 - **怎么验收**：compare 查询的 `final_context` 不偏斜（Pi/Tau 各自占比可打印）；Token Budget 生效；citation 在裁剪中不丢。
-- **完成证据** ✅（2026-10 实测）：`ContextBuilder`（去重/token 预算/项目平衡/citation）+ `retrieve_balanced`（per-project 检索 + 每项目上限）实现；28 单测过；demo 对 2 个 compare 查询——compaction 查询达成 7:7 平衡、agent-loop 查询 pi:1/tau:8（pi 的 agent-loop 语料本就稀疏，平衡受限于语料现实）。注：S6 冻结 heading-only 后 chunk=section=parent，「Parent Expansion/同父合并」天然退化（无 child 可展开），S7 实际聚焦 Context Builder。
+- **完成证据** ✅（2026-10 实测）：`ContextBuilder`（去重/token 预算/项目平衡/citation）+ `retrieve_balanced`（全局召回 → 按项目分桶 + 每项目上限 → round-robin）实现；28 单测过；demo 对 2 个 compare 查询——compaction 查询达成 7:7 平衡、agent-loop 查询 pi:1/tau:8（pi 的 agent-loop 语料本就稀疏，平衡受限于语料现实）。注：S6 冻结 heading-only 后 chunk=section=parent，「Parent Expansion/同父合并」天然退化（无 child 可展开），S7 实际聚焦 Context Builder。
 - **影响与风险**：⚠️ **Context Builder 决定生成质量上限**——项目偏斜会直接让 compare 答案失效；token 预算与 citation 保留是此消彼长，需明确取舍。
 
 #### S8 — 生成 + 引用（按 Intent 分模板）✅
@@ -243,8 +263,8 @@ agentdocs-rag/
 | S2 标准化+元数据+去重 | ✅ 完成 | 318 文档字段全覆盖；9 测试过；重跑 md5 一致 | 2026-10 | 真实语料 0 重复 |
 | S3 分块 | ✅ 完成 | 2753 chunks/2410 parents；17 测试过；30 chunk 抽查通过 | 2026-10 | 详见 chunk-spotcheck.md |
 | S4 评测集+指标 | ✅ 完成 | 28 题/4 intent；golden 0 缺失；21 测试过 | 2026-10 | openhands/langgraph 信号弱 |
-| S5 索引+混合检索 | ✅ 完成 | RRF hit@5=0.821/mrr@5=0.588（BGE-M3@GPU） | 2026-10 | CUDA torch 已装 |
-| S6 Chunk Benchmark | ✅ 完成 | C(heading-only) 胜出：mrr@5=0.631 | 2026-10 | 已冻结进 config |
+| S5 索引+混合检索 | ✅ 完成 | RRF hit@5=0.821/mrr@5=0.588（文件级，封板前） | 2026-10 | CUDA torch 已装 |
+| S6 Chunk Benchmark | ✅ 完成 | C(heading-only) 胜出：mrr@5=0.631（文件级，封板后 section 级重验仍胜出） | 2026-10 | 已冻结进 config |
 | S7 Context Builder | ✅ 完成 | 7:7 平衡（compaction）；retrieve_balanced 上限 | 2026-10 | Parent Expansion 已退化 |
 | S8 生成+引用 | ✅ 完成 | 8 题 4 intent 全通；55 引用可回溯 | 2026-10 | DeepSeek 真实调用 |
 | S9 Trace+CLI+验收 | ✅ 完成 | 8 trace；4 题检索未命中归因；验收全过 | 2026-10 | V0 完成 |
@@ -274,4 +294,5 @@ agentdocs-rag/
 | 2026-10 | S6 | Chunk Benchmark 完成：heading-only 胜出（mrr@5=0.631），已冻结；修 fp16 显存 OOM |
 | 2026-10 | S7 | Context Builder + retrieve_balanced 完成：项目平衡生效，28 单测过 |
 | 2026-10 | S8 | 生成+引用完成：Query Analysis(规则) + 4 intent Prompt + DeepSeek 生成，8 题全通 55 引用可回溯 |
-| 2026-10 | S9 | Trace+验收+失败归因完成：V0 全部验收通过，检索基线 hit@5=0.821 |
+| 2026-10 | S9 | Trace+验收+失败归因完成：V0 全部验收通过，检索基线 hit@5=0.821（文件级） |
+| 2026-10 | 封板 | 用户审查 7 问题全部修复：section 级 golden（hit@5 修正为 0.607）、citation 编号 bug、branch 生效等；S6 重验 heading-only 仍胜出 |
