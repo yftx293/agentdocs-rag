@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 数据与缓存（红线：这些绝不进 git）
+data/raw/
+data/processed/
+*.faiss
+*.npz
+*.pkl
+models_cache/
+.cache/
+
+# 密钥与环境
+.env
+.env.*
+.wheels/
+
+# trace 运行输出
+traces/
+
+# 系统
+.DS_Store
+Thumbs.db

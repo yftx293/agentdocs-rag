@@ -1,0 +1,30 @@
+[project]
+name = "agentdocs-rag"
+version = "0.1.0"
+description = "RAG system for AI Agent / Coding Agent technical documentation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bm25s>=0.3.12",
+    "faiss-cpu>=1.15.1",
+    "jieba>=0.42.1",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "pyyaml>=6.0",
+    "sentence-transformers>=6.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,113 @@
+data:
+  root: data
+  raw_dir: data/raw
+  processed_dir: data/processed
+  eval_dir: data/eval
+
+network:
+  proxy: "http://127.0.0.1:7897"   # 本机代理（用户提供，S1 采集用；可被 AGENTDOCS_PROXY 环境变量覆盖）
+
+corpus:
+  projects:
+    pi:
+      repo: https://github.com/earendil-works/pi
+      branch: main
+      include:
+        - README.md
+        - AGENTS.md
+        - packages/**/docs/**/*.md
+        - packages/**/docs/**/*.mdx
+        - packages/**/README.md
+      exclude:
+        - "**/CHANGELOG.md"
+        - "**/node_modules/**"
+    tau:
+      repo: https://github.com/huggingface/tau
+      branch: main
+      include:
+        - README.md
+        - AGENTS.md
+        - dev-notes/**/*.md
+        - src/**/docs/**/*.md
+      exclude:
+        - "**/CHANGELOG.md"
+    mini-swe-agent:
+      repo: https://github.com/SWE-agent/mini-swe-agent
+      branch: main
+      include:
+        - README.md
+        - AGENTS.md
+        - CLAUDE.md
+        - docs/**/*.md
+        - docs/**/*.mdx
+        - src/**/README.md
+      exclude:
+        - "**/CHANGELOG.md"
+    openhands:
+      repo: https://github.com/All-Hands-AI/OpenHands
+      branch: main
+      include:
+        - README.md
+        - AGENTS.md
+        - docs/**/*.md
+        - docs/**/*.mdx
+        - specs/**/*.md
+      exclude:
+        - "**/CHANGELOG.md"
+        - "**/test/**"
+        - "**/tests/**"
+        - "**/__tests__/**"
+    langgraph:
+      repo: https://github.com/langchain-ai/langgraph
+      branch: main
+      include:
+        - README.md
+        - AGENTS.md
+        - libs/**/README.md
+      exclude:
+        - "**/CHANGELOG.md"
+
+chunking:
+  strategy: heading_only
+  parent_min_tokens: 800
+  parent_max_tokens: 2000
+  child_target_tokens: 400
+  child_min_tokens: 300
+  child_max_tokens: 500
+  overlap_tokens: 50
+  max_overlap_ratio: 0.15
+  heading_only: true
+
+embedding:
+  model: BAAI/bge-m3
+  device: cuda
+  normalize: true
+  max_seq_length: 8192
+
+indexing:
+  vector:
+    backend: faiss
+    top_n: 50
+  bm25:
+    top_n: 50
+    tokenizer: jieba
+  fusion:
+    method: rrf
+    rrf_k: 60
+    final_top_k: 8
+
+retrieval:
+  reranker: none
+
+generation:
+  provider: deepseek
+  model: deepseek-chat
+  temperature: 0.0
+
+evaluation:
+  metrics: [hit_at_k, recall_at_k, mrr]
+  k_values: [3, 5]
+
+observability:
+  trace_dir: traces
+  format: jsonl
